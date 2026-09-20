@@ -27,16 +27,15 @@ Morse morse(
 
 void setup()
 {
-  // put your setup code here, to run once:
-  // int result = myFunction(2, 3);
   // pinMode(LED_BUILTIN, OUTPUT);
+
   output.begin();
 }
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
   // blink.update(millis());
   // digitalWrite(LED_BUILTIN, blink.isOn() ? HIGH : LOW);
+
   morse.send("SOS");
 }
