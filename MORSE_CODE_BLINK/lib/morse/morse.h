@@ -1,17 +1,25 @@
 #pragma once
 
-#include <Arduino.h>
+#include <morseOutput.h>
 
 class Morse
 {
 public:
-    Morse(int dotDuration, int dashDuration, int symbolGap, int letterGap, int wordGap);
-    void send(const char *code);
+    Morse(MorseOutput &output,
+          int dotDuration,
+          int dashDuration,
+          int symbolGap,
+          int letterGap,
+          int wordGap);
+
+    void send(const char *message);
 
 private:
     void dot();
     void dash();
-    void sendCharacter(char character);
+    bool sendCharacter(char character);
+
+    MorseOutput &output;
 
     int dotDuration;
     int dashDuration;

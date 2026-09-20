@@ -1,6 +1,5 @@
 #include <unity.h>
-
-#include "blink.h"
+#include <blink.h>
 
 void test_led_is_off_intially()
 {
@@ -48,15 +47,11 @@ void test_led_toggles_every_interval()
     TEST_ASSERT_TRUE(blink.isOn());
 }
 
-int main()
+void run_blink_tests()
 {
-    UNITY_BEGIN();
-
     RUN_TEST(test_led_is_off_intially);
     RUN_TEST(test_led_turn_on_after_interval);
     RUN_TEST(test_led_turns_off_after_second_interval);
     RUN_TEST(test_led_does_not_toggle_before_interval);
     RUN_TEST(test_led_toggles_every_interval);
-
-    return UNITY_END();
 }

@@ -1,64 +1,94 @@
-#include "morse.h"
-#include "Morse.h"
+#include <morse.h>
+#include <morseOutput.h>
+#include <morseCode.h>
 
-Morse::Morse(int dotDuration, int dashDuration, int symbolGap, int letterGap, int wordGap) : dotDuration(dotDuration), dashDuration(dashDuration), symbolGap(symbolGap), letterGap(letterGap), wordGap(wordGap)
+Morse::Morse(MorseOutput &output,
+             int dotDuration,
+             int dashDuration,
+             int symbolGap,
+             int letterGap,
+             int wordGap)
+    : output(output),
+      dotDuration(dotDuration),
+      dashDuration(dashDuration),
+      symbolGap(symbolGap),
+      letterGap(letterGap),
+      wordGap(wordGap)
 {
 }
 
 void Morse::dot()
 {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(dotDuration);
-
-    digitalWrite(LED_BUILTIN, LOW);
+    output.set(true);
+    output.wait(dotDuration);
+    output.set(false);
 }
 
 void Morse::dash()
 {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(dashDuration);
-
-    digitalWrite(LED_BUILTIN, LOW);
+    output.set(true);
+    output.wait(dashDuration);
+    output.set(false);
 }
 
 void Morse::send(const char *message)
 {
+    bool hasOutput = false;
+    bool wordGapSent = false;
+
     for (int i = 0; message[i] != '\0'; i++)
     {
         if (message[i] == ' ')
         {
-            delay(wordGap);
+            if (hasOutput && !wordGapSent)
+            {
+                bool hasNextCharacter = false;
+
+                for (int j = i + 1; message[j] != '\0'; j++)
+                {
+                    if (message[j] != ' ')
+                    {
+                        hasNextCharacter = true;
+                        break;
+                    }
+                }
+
+                if (hasNextCharacter)
+                {
+                    output.wait(wordGap);
+                    wordGapSent = true;
+                }
+            }
+
             continue;
         }
 
-        sendCharacter(message[i]);
-
-        if (message[i + 1] != '\0' &&
-            message[i + 1] != ' ')
+        if (sendCharacter(message[i]))
         {
-            delay(letterGap);
+            hasOutput = true;
+            wordGapSent = false;
+
+            if (message[i + 1] != '\0' &&
+                message[i + 1] != ' ')
+            {
+                output.wait(letterGap);
+            }
         }
     }
 }
 
-void Morse::sendCharacter(char character)
+bool Morse::sendCharacter(char character)
 {
-    const char *code = nullptr;
-    switch (character)
+    if (character >= 'a' && character <= 'z')
     {
-    case 'S':
-        code = "...";
-        ;
-        break;
-
-    case 'O':
-        code = "---";
-        break;
+        character = character - 'a' + 'A';
     }
+
+    const char *code = MorseCode::get(character);
 
     if (code == nullptr)
     {
-        return;
+        return false;
     }
 
     for (int i = 0; code[i] != '\0'; i++)
@@ -75,7 +105,9 @@ void Morse::sendCharacter(char character)
         // Gap between symbols
         if (code[i + 1] != '\0')
         {
-            delay(symbolGap);
+            output.wait(symbolGap);
         }
     }
+
+    return true;
 }

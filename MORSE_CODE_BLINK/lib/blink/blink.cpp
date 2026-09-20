@@ -1,4 +1,4 @@
-#include "blink.h"
+#include <blink.h>
 
 Blink::Blink(unsigned long intervalMs)
     : intervalMs_(intervalMs), lastToggleTime_(0), ledState_(false)
