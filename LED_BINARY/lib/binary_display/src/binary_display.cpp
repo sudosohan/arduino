@@ -2,48 +2,66 @@
 
 #include <limits.h>
 
-// Initialize the display with its default range: 0 to maximum value.
-void BinaryDisplay::initializeDefault(
-    const uint8_t *ledPins,
-    size_t ledCount)
+// Construct a display with the default range.
+BinaryDisplay::BinaryDisplay(
+    LedOutput &output,
+    unsigned long interval,
+    bool repeat)
+    : output_(output)
 {
-    if (ledCount == 0 || ledCount > MAX_LEDS || ledPins == nullptr)
+    initializeDefault();
+
+    interval_ = interval;
+    repeat_ = repeat;
+
+    if (interval_ == 0)
+    {
+        valid_ = false;
+    }
+}
+
+// Construct a display with a custom range.
+BinaryDisplay::BinaryDisplay(
+    LedOutput &output,
+    uint32_t start,
+    uint32_t end,
+    unsigned long interval,
+    bool repeat)
+    : output_(output)
+{
+    initialize(start, end, interval, repeat);
+}
+
+// Initialize the default range: 0 to maximum representable value.
+void BinaryDisplay::initializeDefault()
+{
+    ledCount_ = output_.ledCount();
+
+    if (ledCount_ == 0 || ledCount_ > 32)
     {
         valid_ = false;
         return;
     }
 
-    initialize(
-        ledPins,
-        ledCount,
-        0,
-        maxValueFor(ledCount),
-        BINARY_DISPLAY_INTERVAL,
-        true);
+    start_ = 0;
+    end_ = maxValue();
+
+    valid_ = true;
 }
 
-// Initialize the display with the supplied configuration.
+// Initialize a custom range and timing configuration.
 void BinaryDisplay::initialize(
-    const uint8_t *ledPins,
-    size_t ledCount,
     uint32_t start,
     uint32_t end,
     unsigned long interval,
     bool repeat)
 {
-    valid_ = false;
-    begun_ = false;
+    ledCount_ = output_.ledCount();
 
-    if (ledPins == nullptr || ledCount == 0 || ledCount > MAX_LEDS)
+    if (ledCount_ == 0 || ledCount_ > 32)
     {
+        valid_ = false;
         return;
-    }
-
-    ledCount_ = ledCount;
-
-    for (size_t i = 0; i < ledCount_; ++i)
-    {
-        ledPins_[i] = ledPins[i];
     }
 
     start_ = start;
@@ -53,12 +71,20 @@ void BinaryDisplay::initialize(
 
     if (interval_ == 0 || start_ > end_ || end_ > maxValue())
     {
+        valid_ = false;
         return;
     }
 
     valid_ = true;
 }
 
+// Calculate the maximum representable value.
+uint32_t BinaryDisplay::maxValue() const
+{
+    return maxValueFor(ledCount_);
+}
+
+// Calculate the maximum for a given number of LEDs.
 uint32_t BinaryDisplay::maxValueFor(size_t ledCount)
 {
     if (ledCount == 32)
@@ -69,13 +95,7 @@ uint32_t BinaryDisplay::maxValueFor(size_t ledCount)
     return (static_cast<uint32_t>(1) << ledCount) - 1;
 }
 
-// Return the largest number that can be represented by the LEDs.
-uint32_t BinaryDisplay::maxValue() const
-{
-    return maxValueFor(ledCount_);
-}
-
-// Configure the LED pins as outputs and turn all LEDs off.
+// Initialize the underlying output.
 bool BinaryDisplay::begin()
 {
     if (!valid_)
@@ -83,15 +103,9 @@ bool BinaryDisplay::begin()
         return false;
     }
 
-    for (size_t i = 0; i < ledCount_; ++i)
-    {
-        pinMode(ledPins_[i], OUTPUT);
-        digitalWrite(ledPins_[i], LOW);
-    }
+    begun_ = output_.begin();
 
-    begun_ = true;
-
-    return true;
+    return begun_;
 }
 
 // Return whether the configuration is valid.
@@ -110,11 +124,10 @@ bool BinaryDisplay::show(uint32_t number)
 
     for (size_t i = 0; i < ledCount_; ++i)
     {
-        const bool bitIsSet = (number & (static_cast<uint32_t>(1) << i)) != 0;
+        const bool bitIsSet =
+            (number & (static_cast<uint32_t>(1) << i)) != 0;
 
-        digitalWrite(
-            ledPins_[i],
-            bitIsSet ? HIGH : LOW);
+        output_.setLed(i, bitIsSet);
     }
 
     return true;

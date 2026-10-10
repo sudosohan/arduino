@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "led_output.h"
 
 #ifndef BINARY_DISPLAY_INTERVAL
 #define BINARY_DISPLAY_INTERVAL 500
@@ -12,22 +13,17 @@
 class BinaryDisplay
 {
 public:
-    template <size_t N>
-    explicit BinaryDisplay(const uint8_t (&ledPins)[N])
-    {
-        initializeDefault(ledPins, N);
-    }
+    explicit BinaryDisplay(
+        LedOutput &output,
+        unsigned long interval = BINARY_DISPLAY_INTERVAL,
+        bool repeat = true);
 
-    template <size_t N>
     BinaryDisplay(
-        const uint8_t (&ledPins)[N],
+        LedOutput &output,
         uint32_t start,
         uint32_t end,
         unsigned long interval = BINARY_DISPLAY_INTERVAL,
-        bool repeat = true)
-    {
-        initialize(ledPins, N, start, end, interval, repeat);
-    }
+        bool repeat = true);
 
     bool begin();
 
@@ -38,9 +34,8 @@ public:
     bool run();
 
 private:
-    static constexpr size_t MAX_LEDS = 32;
+    LedOutput &output_;
 
-    uint8_t ledPins_[MAX_LEDS] = {};
     size_t ledCount_ = 0;
 
     uint32_t start_ = 0;
@@ -52,20 +47,16 @@ private:
     bool valid_ = false;
     bool begun_ = false;
 
-    void initializeDefault(
-        const uint8_t *ledPins,
-        size_t ledCount);
+    void initializeDefault();
 
     void initialize(
-        const uint8_t *ledPins,
-        size_t ledCount,
         uint32_t start,
         uint32_t end,
         unsigned long interval,
         bool repeat);
 
-    static uint32_t maxValueFor(size_t ledCount);
     uint32_t maxValue() const;
+    static uint32_t maxValueFor(size_t ledCount);
 };
 
 #endif
